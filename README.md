@@ -2,7 +2,7 @@
 
 # Nodesh
 
-### Ideas connected. Knowledge discovered.
+### Converting your boring files into graphs.
 
 Turn documents into an interactive knowledge graph. Explore the concepts, follow their connections, and trace them back to the source text.
 
