@@ -1,0 +1,9 @@
+.git
+.next
+.venv
+node_modules
+uploads
+postgres-data
+*.pyc
+__pycache__
+.env

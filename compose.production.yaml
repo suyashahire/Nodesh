@@ -1,0 +1,33 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-nodesh}:${POSTGRES_PASSWORD:-nodesh_dev_password}@db:5432/${POSTGRES_DB:-nodesh}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      UPLOADS_DIR: /app/uploads
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+      MAX_WORKSPACE_DOCUMENTS: ${MAX_WORKSPACE_DOCUMENTS:-25}
+      MAX_WORKSPACE_STORAGE_BYTES: ${MAX_WORKSPACE_STORAGE_BYTES:-52428800}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - nodesh-uploads:/app/uploads
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+volumes:
+  nodesh-uploads:

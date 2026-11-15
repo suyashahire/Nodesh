@@ -1,0 +1,13 @@
+{
+  "name": "nodesh",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "dev:web": "npm --workspace @nodesh/web run dev",
+    "start:web": "npm --workspace @nodesh/web run start",
+    "build:web": "npm --workspace @nodesh/web run build",
+    "test:web": "npm --workspace @nodesh/web run test",
+    "lint:web": "npm --workspace @nodesh/web run lint"
+  }
+}
