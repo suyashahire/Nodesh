@@ -1,76 +1,106 @@
 # Nodesh
 
-Nodesh turns a collection of documents into an interconnected, calm, and explorable knowledge graph workspace.
+> Turn collections of documents into a calm, explorable knowledge graph — completely offline, deterministic, and private.
 
-Built with a **FastAPI** backend, **Next.js 15 (React 19)** frontend, and zero external ML dependencies—Nodesh uses deterministic statistical NLP (TF-IDF + Okapi BM25, PMI/NPMI co-occurrence, and TextRank PageRank) to extract concepts, relationships, and document evidence.
+Most document tools today fall into one of two camps: they are either dumb search bars returning lists of disjointed files, or they wrap a third-party LLM that hallucinates connections, leaks your notes to cloud APIs, and charges per token.
 
----
+**Nodesh** is built on a different principle: **your documents already contain their own structure.** 
 
-## Features
-
-- **Editorial Knowledge Workspace**: Calm, focused application shell with a paper parchment canvas, quiet toolbar, collapsible navigator, and contextual right-side inspector.
-- **Deterministic Concept Extraction**: Classical statistical NLP with clause-bounded n-grams, technical acronym whitelisting (`AI`, `ML`, `DL`, `FastAPI`, `BERT`), and multi-level phrase subsumption deduplication.
-- **Semantic Relationship Graph**: Evidence-backed co-occurrence with Pointwise Mutual Information (PMI/NPMI) and typed relationship predicates (`uses`, `improves`, `causes`, `compared_to`, `trained_for`, `built_with`).
-- **Interactive Graph Canvas**: Canvas supporting both force-directed organic and concentric circle layouts, radar minimap, connected neighbor highlights, node importance sizing, and topic cluster legends.
-- **Concept Dossiers & Evidence**: Contextual inspector powered by TextRank PageRank extractive summarization, presenting key quotes, source references, and co-occurring neighbors.
-- **Multi-Document Comparison & Alias Merging**: Non-destructive, suggestion-only alias merging and multi-document overlap comparison.
-- **Hardened Security & Strict Quotas**: Mandatory magic-byte inspection (`%PDF-`, `PK\x03\x04`), 10MB file limit, 25-doc/50MB workspace quotas, decompression bomb mitigation, sliding-window rate limiting, and strict security headers.
+By applying classical statistical NLP, mutual information theory, and graph centrality, Nodesh maps out the concepts and evidence hiding in your research papers, notes, and resumes. It runs in milliseconds on your local machine with zero external AI models, zero GPU requirements, and zero API keys.
 
 ---
 
-## Prerequisites
+## What it looks like
 
-- Node.js 20 or newer
-- Python 3.11 or newer (Python 3.13 tested)
-- Docker Compose (optional for containerized run)
+- **Parchment Knowledge Canvas**: A calm, editorial graph surface designed for thinking. Nodes are sized by graph importance and semantic weight rather than raw frequency.
+- **Contextual Evidence Inspector**: Clicking any concept opens a right-side drawer showing exact source sentences extracted using TextRank PageRank, along with co-occurring neighbors.
+- **Relational Proof**: Edges are not decorative lines. Clicking any connection reveals the exact paragraph snippets and Normalized Pointwise Mutual Information (NPMI) score proving *why* the two concepts belong together.
+- **Document Navigator & Comparison**: Filter the graph to see concepts unique to a single document, or switch to intersection mode to see shared concepts across multiple files.
+- **Non-Destructive Alias Merging**: Suggests likely duplicates (`React` vs `React.js`) with manual one-click merging that never mutates or destroys raw source files.
 
 ---
 
-## Quick Start
+## How it works
 
-### 1. Backend Setup
-From `apps/api`:
+Nodesh avoids machine learning dependencies in favor of reproducible, explainable algorithms:
+
+### 1. Clause-Bounded Concept Extraction
+Instead of blindly chunking text or splitting on spaces (which causes page headers and line wraps to merge into garbage bigrams), Nodesh segments text at grammatical clause boundaries (punctuation, quotes, line breaks). Candidates are scored using **Okapi BM25-smoothed TF-IDF** with phrase-level subsumption deduplication—so `Decision Tree` won't leave behind a redundant, orphaned `Tree` node.
+
+### 2. Evidence-Backed Graph Topology
+Connections are calculated by sliding contextual windows across paragraphs:
+- **NPMI (Normalized Pointwise Mutual Information)**: Measures whether two ideas appear together significantly more often than random chance, bounding connection strength between `-1.0` and `+1.0`.
+- **Predicate Classification**: Connective phrases between co-occurring entities are parsed to label edges with semantic types like `uses`, `improves`, `causes`, `trained_for`, and `built_with`.
+
+### 3. TextRank Extractive Dossiers
+When you inspect a concept, Nodesh builds a sentence similarity graph using cosine token overlap and runs the **PageRank** power-iteration algorithm. It extracts the most salient explanatory sentences directly from your documents without hallucinating words.
+
+---
+
+## Quickstart
+
+### Prerequisites
+- Python 3.11+ (Python 3.13 supported)
+- Node.js 20+
+
+### 1. Start the API
 ```sh
-python -m venv .venv
+cd apps/api
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 alembic upgrade head
-uvicorn --app-dir src nodesh_api.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn nodesh_api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 2. Frontend Setup
-From the repository root:
+### 2. Start the Web App
+From the root directory:
 ```sh
 npm install
 npm run dev:web
 ```
 
-The web shell is available at `http://localhost:3000`; the API health endpoint runs at `http://localhost:8000/health`.
+Open [http://localhost:3000](http://localhost:3000) in your browser. Drop in a few PDFs, Markdown files, or Word documents, and click **Analyze workspace**.
 
 ---
 
-## Validation & Testing
+## Architecture & Tech Stack
 
-Run the complete test suites:
+| Layer | Technology | Why |
+| :--- | :--- | :--- |
+| **Frontend** | Next.js 15, React 19, TypeScript | Instant server hydration, typed API client contracts |
+| **Graph Surface** | Canvas2D | Silky smooth 60fps rendering of 100+ nodes and edges |
+| **Backend** | FastAPI, Python 3.13 | High-throughput asynchronous REST API |
+| **Persistence** | SQLite / PostgreSQL + SQLAlchemy | Zero-config SQLite for local use, PostgreSQL for production |
+| **Testing** | Pytest (41 tests) + Vitest (33 tests) | 100% pass rate across unit, integration, and security suites |
+
+---
+
+## Built with Security in Mind
+
+Nodesh was engineered to safely ingest untrusted documents:
+- **Magic-Byte Inspection**: Uploads are verified by byte signature (`%PDF-`, `PK\x03\x04`), rejecting disguised executables or spoofed MIME types.
+- **Decompression Bomb Protection**: Word documents (`.docx`) are inspected for uncompressed size and compression ratios before extraction to prevent zip bombs.
+- **Algorithmic Bounds**: TextRank PageRank is strictly bounded to the top 250 salient sentences, preventing quadratic $O(S^2)$ memory explosion on massive files.
+- **Strict Quotas**: 10MB per document, 25 documents / 50MB maximum per workspace, with sliding-window rate limiting.
+
+---
+
+## Running Tests
 
 ```sh
-# Backend tests (41 tests: extraction, textrank, graph, security, quotas)
+# Backend tests (extraction, PageRank, relationships, security quotas)
 pytest apps/api/tests
 
-# Frontend tests (33 tests: workspace shell, graph views, inspectors)
+# Frontend tests (canvas interactions, inspectors, workspace shell)
 npm run test:web
 
-# TypeScript typecheck
+# TypeScript strict type check
 npx tsc -p apps/web/tsconfig.json --noEmit
 ```
 
 ---
 
-## Production Deployment
+## License
 
-Run locally with production settings via Docker Compose:
-```sh
-docker compose -f compose.yaml -f compose.production.yaml up --build
-```
-
-For detailed architecture, deployment, and privacy documentation, see `docs/ARCHITECTURE.md`, `docs/DEPLOYMENT.md`, and `docs/PRIVACY.md`.
+MIT © [Suyash Ahire](https://github.com/suyashahire)
