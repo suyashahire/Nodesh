@@ -17,9 +17,10 @@ from nodesh_api.routers.workspaces import router as workspaces_router
 app = FastAPI(title="Nodesh API", version="0.1.0")
 
 settings = get_settings()
+allowed_origins = [o.strip() for o in settings.web_origin.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.web_origin],
+    allow_origins=allowed_origins if allowed_origins else ["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type"],
