@@ -1,82 +1,81 @@
-# Nodesh Deployment Guide
+# Deploy Nodesh
 
-This guide covers deploying Nodesh online with a live public URL and custom domain without requiring a credit card.
+## Free demo: Render API + Vercel frontend
 
----
+The free Render service uses temporary SQLite and uploads. Data is lost when the
+service restarts, redeploys, or spins down after inactivity. Cold starts can take
+about a minute. Closing a browser tab does not delete server data.
 
-## Architecture for Online Deployment
+### 1. Push the repository
 
-Nodesh consists of:
-1. **Frontend**: Next.js 15 (React 19) web application (`apps/web`).
-2. **Backend**: FastAPI (Python 3.11+) REST API (`apps/api`).
-3. **Database**: SQLite (embedded, zero external setup) or PostgreSQL.
-4. **Storage**: Local persistent filesystem (`uploads/`).
+Push the deployment changes to `main` at https://github.com/suyashahire/Nodesh.
+Do not upload `.env`, local databases, or uploaded documents.
 
----
+### 2. Deploy the API
 
-## 100% Free & Zero-Card Deployment (Hugging Face Spaces + Vercel)
+Open https://dashboard.render.com/select-repo?type=blueprint and select Nodesh.
+Render reads `render.yaml`; choose the Free plan. Enter `http://localhost:3000`
+for `WEB_ORIGIN` initially, then replace it with the frontend origin in step 4.
+No separate database is needed for this demo.
 
-> [!NOTE]
-> **No credit card or payment method is required for either platform.**
-> - **Hugging Face Spaces**: Select the **Gradio SDK** (100% free with 2 vCPUs · 16 GB RAM). Our root `app.py` automatically mounts the full FastAPI REST API onto it.
-> - **Vercel**: Next.js 15 frontend hosted on the global edge (Hobby tier is 100% free).
+For manual Web Service setup:
 
----
+| Setting | Value |
+| --- | --- |
+| Runtime | Python |
+| Root directory | `apps/api` |
+| Build command | `pip install -e .` |
+| Start command | `alembic upgrade head && uvicorn nodesh_api.main:app --host 0.0.0.0 --port $PORT` |
+| Health check | `/healthz` |
+| Plan | Free |
+| `PYTHON_VERSION` | `3.11.9` |
+| `DATABASE_URL` | `sqlite:////tmp/nodesh.db` |
+| `UPLOADS_DIR` | `/tmp/nodesh-uploads` |
+| `WEB_ORIGIN` | Actual frontend origin, no trailing slash |
 
-### Step 1: Deploy Backend API on Hugging Face Spaces
+Wait for Live, then open the actual API URL followed by `/healthz`.
+Expected response: `{"status":"ok","service":"nodesh-api"}`.
 
-1. Create a free account at [huggingface.co](https://huggingface.co) (login via GitHub or email; **zero card required**).
-2. Go to **[huggingface.co/new-space](https://huggingface.co/new-space)**.
-3. Configure your Space:
-   - **Space Name**: `nodesh-api`
-   - **License**: `mit`
-   - **Space SDK**: Select **Gradio** *(100% free forever; DO NOT choose Docker as Docker requires a paid PRO plan)*
-   - **Space hardware**: `Free CPU (2 vCPU · 16 GB RAM)`
-   - **Visibility**: `Public`
-4. Click **Create Space**.
-5. Connect your local git repository and push to Hugging Face:
-   ```sh
-   # Add Hugging Face Space as a git remote
-   git remote add space https://huggingface.co/spaces/<your-hf-username>/nodesh-api
+### 3. Deploy the frontend
 
-   # Push to Hugging Face
-   git push space main
-   ```
-   *(Hugging Face will automatically install `requirements.txt`, run migrations, and launch `app.py` on port 7860).*
-6. Once the build badge says **Running**, your live backend URL is:
-   `https://<your-hf-username>-nodesh-api.hf.space`
-7. Test the health endpoint in your browser or curl:
-   ```sh
-   curl https://<your-hf-username>-nodesh-api.hf.space/health
-   # Returns: {"status":"healthy"}
-   ```
+Open https://vercel.com/new and import Nodesh.
 
----
+| Setting | Value |
+| --- | --- |
+| Framework | Next.js |
+| Root directory | `apps/web` |
+| Build/install commands | Framework defaults |
+| `NEXT_PUBLIC_API_BASE_URL` | Actual Render URL, including `https://` |
 
-### Step 2: Deploy Frontend on Vercel
+### 4. Connect and verify
 
-1. Sign in to [Vercel.com](https://vercel.com) with GitHub (**zero card required** on Hobby tier).
-2. Click **Add New...** → **Project**.
-3. Import your GitHub repository: `suyashahire/Nodesh`.
-4. Configure the project:
-   - **Framework Preset**: `Next.js`
-   - **Root Directory**: Click *Edit* and select `apps/web`.
-5. Under **Environment Variables**, add:
-   - **Key**: `NEXT_PUBLIC_API_BASE_URL`
-   - **Value**: `https://<your-hf-username>-nodesh-api.hf.space` (from Step 1)
-6. Click **Deploy**.
-7. In ~45 seconds, Vercel gives you your production URL: `https://nodesh.vercel.app`.
+Set Render's `WEB_ORIGIN` to the actual Vercel origin and redeploy the API.
+Trusted origins can be comma-separated; avoid `*` for the public deployment.
+If the API URL changes, update the Vercel variable and rebuild the frontend.
 
----
+Open the frontend, upload two small documents, and confirm automatic graph
+analysis, concept summaries, relationship evidence, document comparison, refresh
+and resume, and JSON/PNG exports.
 
-## Self-Hosted Production Run (Docker Compose on VPS)
+Workspace IDs grant access to their data. Do not share them or upload confidential
+files to the public demo. Use the workspace deletion control when finished.
 
-For a self-hosted cloud instance (e.g. AWS EC2, DigitalOcean Droplet, Hetzner):
+## Persistent deployment
+
+The existing production Compose configuration uses PostgreSQL and an uploads volume.
+Configure `.env` from `.env.example`, set strong database credentials and actual
+origins, and terminate HTTPS with a reverse proxy.
 
 ```sh
-# Copy and configure environment variables
-cp .env.example .env
-
-# Start with production Compose file
 docker compose -f compose.yaml -f compose.production.yaml up --build -d
 ```
+
+## References
+
+- https://render.com/docs/free
+- https://render.com/docs/blueprint-spec
+- https://vercel.com/docs/monorepos
+
+The root Dockerfile and `app.py` are alternative backend entrypoints. Check current
+Hugging Face account requirements before deploying there; the previous claim that
+Gradio compute is always free was inaccurate.
