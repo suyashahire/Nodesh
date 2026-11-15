@@ -301,6 +301,13 @@ export function KnowledgeGraphView({
     hasMoved: boolean;
   } | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const touchPointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{
+    distance: number;
+    zoom: number;
+    anchor: { x: number; y: number };
+  } | null>(null);
+  const suppressTouchClickRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const maxStrength = Math.max(...graph.edges.map((edge) => edge.strength), 1);
@@ -648,6 +655,72 @@ export function KnowledgeGraphView({
   }
 
   // Canvas pan handlers
+  function screenPointToGraph(x: number, y: number) {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect?.width || !rect.height) return { x, y };
+    const scale = Math.min(rect.width / WIDTH, rect.height / HEIGHT);
+    return {
+      x: (x - rect.left - (rect.width - WIDTH * scale) / 2) / scale,
+      y: (y - rect.top - (rect.height - HEIGHT * scale) / 2) / scale,
+    };
+  }
+
+  // Capture touch pointers before node handlers so pinching also works over nodes.
+  function handleTouchPointerDown(event: React.PointerEvent<SVGSVGElement>) {
+    if (event.pointerType !== "touch") return;
+    const pointers = touchPointersRef.current;
+    if (pointers.size === 0) suppressTouchClickRef.current = false;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size < 2) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (pinchRef.current) return;
+    const [a, b] = Array.from(pointers.values());
+    const midpoint = screenPointToGraph((a.x + b.x) / 2, (a.y + b.y) / 2);
+    pinchRef.current = {
+      distance: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
+      zoom,
+      anchor: { x: (midpoint.x - pan.x) / zoom, y: (midpoint.y - pan.y) / zoom },
+    };
+    suppressTouchClickRef.current = true;
+    nodeDragRef.current = null;
+    isDraggingCanvasRef.current = false;
+    setHoveredNodeId(null);
+    for (const id of pointers.keys()) event.currentTarget.setPointerCapture(id);
+  }
+
+  function handleTouchPointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    if (event.pointerType !== "touch" || !touchPointersRef.current.has(event.pointerId)) return;
+    const pointers = touchPointersRef.current;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const pinch = pinchRef.current;
+    if (!pinch) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (pointers.size < 2) return;
+    const [a, b] = Array.from(pointers.values());
+    const next = Math.max(0.4, Math.min(3,
+      pinch.zoom * Math.hypot(b.x - a.x, b.y - a.y) / pinch.distance,
+    ));
+    const midpoint = screenPointToGraph((a.x + b.x) / 2, (a.y + b.y) / 2);
+    setZoom(next);
+    setPan({ x: midpoint.x - pinch.anchor.x * next, y: midpoint.y - pinch.anchor.y * next });
+  }
+
+  function handleTouchPointerEnd(event: React.PointerEvent<SVGSVGElement>) {
+    if (event.pointerType !== "touch") return;
+    touchPointersRef.current.delete(event.pointerId);
+    if (!pinchRef.current) return;
+    event.stopPropagation();
+    // Keep the gesture active until both fingers lift, preventing accidental node taps.
+    if (touchPointersRef.current.size === 0) pinchRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // The browser may already have released a cancelled pointer.
+    }
+  }
+
   function screenDeltaToGraph(dx: number, dy: number) {
     const rect = svgRef.current?.getBoundingClientRect();
     const scale = rect && rect.width && rect.height
@@ -1085,6 +1158,16 @@ export function KnowledgeGraphView({
           <svg
             aria-label="Interactive concept network"
             className="graph-canvas"
+            onPointerDownCapture={handleTouchPointerDown}
+            onPointerMoveCapture={handleTouchPointerMove}
+            onPointerUpCapture={handleTouchPointerEnd}
+            onPointerCancelCapture={handleTouchPointerEnd}
+            onClickCapture={(event) => {
+              if (suppressTouchClickRef.current) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
             onPointerDown={handleCanvasPointerDown}
             onPointerMove={handleCanvasPointerMove}
             onPointerUp={handleCanvasPointerUp}

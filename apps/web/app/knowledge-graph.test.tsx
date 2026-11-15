@@ -235,4 +235,55 @@ describe("KnowledgeGraphView Editorial Workspace", () => {
     await act(async () => root.unmount());
   });
 
+  it.each(["canvas", "node"])("pinches around the fingers when starting on a %s", async (startOn) => {
+    const root = createRoot(container);
+    await act(async () => root.render(<KnowledgeGraphView graph={mockGraph} />));
+    const svg = container.querySelector(".graph-canvas") as SVGSVGElement;
+    const node = svg.querySelector(".graph-node") as SVGGElement;
+    const camera = svg.querySelector("g")!;
+    Object.defineProperty(svg, "getBoundingClientRect", {
+      value: () => ({ width: 320, height: 400, left: 0, top: 0 }),
+    });
+    svg.setPointerCapture = vi.fn();
+    svg.releasePointerCapture = vi.fn();
+    node.setPointerCapture = vi.fn();
+    node.releasePointerCapture = vi.fn();
+    async function touch(type: string, id: number, x: number, y: number, target: Element = svg) {
+      await act(async () => {
+        const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y });
+        Object.defineProperties(event, { pointerId: { value: id }, pointerType: { value: "touch" } });
+        target.dispatchEvent(event);
+      });
+    }
+    function expectCamera(x: number, y: number, zoom: number) {
+      const values = camera.getAttribute("transform")!.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
+      expect(values[0]).toBeCloseTo(x);
+      expect(values[1]).toBeCloseTo(y);
+      expect(values[2]).toBeCloseTo(zoom);
+    }
+    await touch("pointerdown", 1, 110, 200, startOn === "node" ? node : svg);
+    await touch("pointerdown", 2, 210, 200);
+    await touch("pointermove", 1, 85, 200);
+    await touch("pointermove", 2, 235, 200);
+    expectCamera(-240, -160, 1.5);
+    // Moving the midpoint moves the graph without changing magnification.
+    await touch("pointermove", 1, 105, 220);
+    await touch("pointermove", 2, 255, 220);
+    expectCamera(-180, -100, 1.5);
+    // Pinch inward, including the lower zoom boundary.
+    await touch("pointermove", 1, 175, 220);
+    await touch("pointermove", 2, 185, 220);
+    expectCamera(348, 252, 0.4);
+    // Cancellation releases the gesture, with no accidental inspector selection.
+    await touch("pointercancel", 1, 175, 220);
+    await touch("pointerup", 2, 185, 220, node);
+    await act(async () => node.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(container.querySelector(".context-inspector")).toBeNull();
+    await touch("pointerdown", 3, 20, 20);
+    await touch("pointermove", 3, 30, 30);
+    await touch("pointerup", 3, 30, 30);
+    expectCamera(378, 282, 0.4);
+    await act(async () => root.unmount());
+  });
+
 });

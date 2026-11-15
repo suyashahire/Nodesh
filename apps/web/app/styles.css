@@ -1979,6 +1979,19 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 
 @media (max-width: 900px) {
+  .graph-empty-state {
+    flex: 1;
+    min-height: 0;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    gap: .65rem;
+  }
+  .graph-empty-state .empty-subtitle {
+    width: 100%;
+    max-width: 30ch;
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
   .mobile-workspace-error { display: block; margin: 0; padding: .65rem .85rem; font-size: .8rem; color: var(--ink-primary); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); }
   .app-topbar {
     height: auto;
