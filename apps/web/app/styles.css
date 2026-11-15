@@ -1940,57 +1940,151 @@ button, input, select, textarea {
    RESPONSIVE BEHAVIOR (Graceful Collapse)
    ========================================================================== */
 
-@media (max-width: 900px) {
-  .app-body {
-    flex-direction: column;
-    overflow-y: auto;
-  }
+.mobile-documents-toggle,
+.mobile-documents-close,
+.mobile-documents-backdrop,
+.mobile-layout-control,
+.mobile-workspace-error { display: none; }
 
-  .doc-navigator {
-    width: 100%;
-    min-width: 100%;
-    max-width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--shell-border);
-    height: auto;
-    max-height: 240px;
-  }
-
-  .context-inspector {
-    position: fixed;
-    right: 0;
-    top: 48px;
-    bottom: 0;
-    width: 100%;
-    max-width: 360px;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
-  }
+.app-shell { height: 100dvh; }
+.app-body { min-height: 0; height: auto; }
+.graph-layout-container, .graph-surface-area, .graph-canvas-container { min-height: 0; }
+.graph-canvas { touch-action: none; }
+.graph-zoom-controls {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--canvas-border);
+  border-radius: 10px;
+  background: var(--shell-surface);
+  box-shadow: 0 3px 12px rgba(0,0,0,.08);
+  z-index: 11;
+}
+.graph-zoom-controls button {
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.graph-zoom-controls button:hover { background: var(--shell-muted); }
+button:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
+  .mobile-workspace-error { display: block; margin: 0; padding: .65rem .85rem; font-size: .8rem; color: var(--ink-primary); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); }
   .app-topbar {
     height: auto;
-    padding: 0.5rem 0.75rem;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .topbar-left {
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .context-inspector {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .toolbar-controls-row {
+    flex-shrink: 0;
+    padding: .65rem .85rem;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: .65rem;
   }
-
-  .toolbar-search {
+  .topbar-left { gap: .45rem; min-width: 0; }
+  .topbar-meta { font-size: .7rem; white-space: nowrap; }
+  .workspace-id, .topbar-divider { display: none; }
+  .topbar-right { gap: .4rem; justify-content: space-between; }
+  .topbar-right > button { min-height: 44px; padding: .5rem .65rem; }
+  .mobile-documents-toggle { display: inline-flex; align-items: center; gap: .4rem; }
+  .topbar-mode-toggle { display: none; }
+  .app-body { overflow: hidden; }
+  .mobile-documents-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(20, 24, 28, .35);
+    z-index: 29;
+  }
+  .doc-navigator {
+    display: none;
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: min(360px, 92%);
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 8px 0 30px rgba(0,0,0,.14);
+    overscroll-behavior: contain;
+    z-index: 30;
+  }
+  .doc-navigator-open { display: flex; }
+  .mobile-documents-close { display: flex; margin-left: auto; }
+  .navigator-header { gap: .5rem; }
+  .btn-doc-delete { opacity: 1; min-width: 44px; min-height: 44px; }
+  .doc-item { min-height: 64px; }
+  .graph-quiet-toolbar {
+    padding: .75rem;
+    max-height: min(48dvh, 340px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .toolbar-controls-row { gap: .65rem; }
+  .toolbar-search { width: 100%; }
+  .toolbar-search-input { min-height: 44px; font-size: 16px; }
+  .strength-control { width: 100%; flex-wrap: wrap; min-height: 44px; }
+  .strength-control input[type="range"] { flex: 1; min-width: 70px; min-height: 32px; }
+  .quiet-chip, .topic-pill, .btn-quiet-action, .btn-quiet-danger,
+  .btn-nav-compare, .doc-chip, .btn-step-inspect, .path-concept-chip { min-height: 44px; }
+  .toolbar-actions-group { margin-left: 0; flex-wrap: wrap; }
+  .mobile-layout-control { display: flex; align-items: center; gap: .5rem; font-size: .8rem; }
+  .mobile-layout-control select { min-height: 44px; font-size: 16px; border: 1px solid var(--canvas-border); border-radius: 6px; background: var(--shell-surface); }
+  .topic-chips-scroll { min-width: 0; }
+  .graph-minimap-panel { display: none; }
+  .graph-zoom-controls { bottom: max(.75rem, env(safe-area-inset-bottom)); left: .75rem; }
+  .context-inspector {
+    position: absolute;
+    inset: auto 0 0;
     width: 100%;
+    min-width: 0;
+    max-width: none;
+    max-height: 62%;
+    padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+    border: 0;
+    border-top: 1px solid var(--shell-border);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 28px rgba(0,0,0,.12);
+    overscroll-behavior: contain;
+    z-index: 20;
   }
+  .context-inspector::before {
+    content: "";
+    display: block;
+    width: 36px;
+    min-height: 4px;
+    margin: -.35rem auto 0;
+    border-radius: 4px;
+    background: var(--shell-border-strong);
+  }
+  .inspector-close-btn, .inspector-close, .path-bar-close { min-width: 44px; min-height: 44px; }
+  .inspector-title, .doc-breakdown-title, .overlap-card-title { overflow-wrap: anywhere; }
+  .context-inspector select { max-width: 100%; font-size: 16px; }
+  .canvas-path-bar { left: .75rem; right: .75rem; bottom: 4.5rem; max-width: none; }
+  .path-bar-title { flex-wrap: wrap; }
+  .modal-backdrop { padding: .65rem; }
+  .comparison-modal { width: 100%; max-width: 100%; max-height: 90dvh; }
+  .comparison-modal-header, .comparison-modal-body { padding: 1rem; }
+  .overlap-card-title { flex-wrap: wrap; gap: .4rem; }
+}
+
+@media (max-width: 380px) {
+  .app-topbar { padding: .5rem; }
+  .topbar-left { flex-wrap: wrap; column-gap: .35rem; row-gap: .2rem; }
+  .topbar-right { gap: .25rem; }
+  .topbar-right > button { font-size: .7rem; padding-inline: .4rem; }
+  .mobile-documents-toggle .count-pill { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

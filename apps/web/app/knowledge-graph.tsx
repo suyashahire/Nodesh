@@ -648,6 +648,24 @@ export function KnowledgeGraphView({
   }
 
   // Canvas pan handlers
+  function screenDeltaToGraph(dx: number, dy: number) {
+    const rect = svgRef.current?.getBoundingClientRect();
+    const scale = rect && rect.width && rect.height
+      ? Math.min(rect.width / WIDTH, rect.height / HEIGHT)
+      : 1;
+    return { x: dx / scale, y: dy / scale };
+  }
+
+  function zoomBy(factor: number) {
+    const next = Math.max(0.4, Math.min(3, zoom * factor));
+    const ratio = next / zoom;
+    setPan({
+      x: CENTER_X - (CENTER_X - pan.x) * ratio,
+      y: CENTER_Y - (CENTER_Y - pan.y) * ratio,
+    });
+    setZoom(next);
+  }
+
   function handleCanvasPointerDown(event: React.PointerEvent<SVGSVGElement>) {
     const target = event.target as HTMLElement;
     if (target.closest(".graph-node") || target.closest(".graph-edge")) return;
@@ -673,8 +691,9 @@ export function KnowledgeGraphView({
       const dy = event.clientY - nodeDragRef.current.startY;
       if (!nodeDragRef.current.hasMoved && Math.hypot(dx, dy) < 4) return;
       nodeDragRef.current.hasMoved = true;
-      const svgDx = dx / zoom;
-      const svgDy = dy / zoom;
+      const delta = screenDeltaToGraph(dx, dy);
+      const svgDx = delta.x / zoom;
+      const svgDy = delta.y / zoom;
       const newX = Math.max(50, Math.min(WIDTH - 50, nodeDragRef.current.origX + svgDx));
       const newY = Math.max(40, Math.min(HEIGHT - 40, nodeDragRef.current.origY + svgDy));
       setCustomPositions((prev) => {
@@ -688,14 +707,16 @@ export function KnowledgeGraphView({
     if (!isDraggingCanvasRef.current) return;
     const dx = event.clientX - canvasDragStartRef.current.x;
     const dy = event.clientY - canvasDragStartRef.current.y;
+    const delta = screenDeltaToGraph(dx, dy);
     setPan({
-      x: canvasDragStartRef.current.panX + dx,
-      y: canvasDragStartRef.current.panY + dy,
+      x: canvasDragStartRef.current.panX + delta.x,
+      y: canvasDragStartRef.current.panY + delta.y,
     });
   }
 
   function handleCanvasPointerUp(event: React.PointerEvent<SVGSVGElement>) {
     isDraggingCanvasRef.current = false;
+    nodeDragRef.current = null;
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
@@ -741,7 +762,7 @@ export function KnowledgeGraphView({
   function handleWheel(event: React.WheelEvent<SVGSVGElement>) {
     event.preventDefault();
     const delta = event.deltaY > 0 ? 0.9 : 1.1;
-    setZoom((z) => Math.max(0.4, Math.min(3, z * delta)));
+    zoomBy(delta);
   }
 
   function handleMinimapClick(event: React.MouseEvent<SVGSVGElement>) {
@@ -870,6 +891,7 @@ export function KnowledgeGraphView({
                 </svg>
                 <input
                   className="toolbar-search-input"
+                  aria-label="Search concepts"
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Search concepts... (/)"
@@ -987,6 +1009,13 @@ export function KnowledgeGraphView({
               </div>
 
               {/* Secondary Actions */}
+              <label className="mobile-layout-control">
+                Layout
+                <select aria-label="Graph layout" value={layoutMode} onChange={(event) => setLayoutMode(event.target.value as "force" | "concentric")}>
+                  <option value="force">Organic</option>
+                  <option value="concentric">Concentric</option>
+                </select>
+              </label>
               <div className="toolbar-actions-group">
                 <button className="btn-quiet-action" onClick={resetView} title="Reset camera pan and zoom" type="button">
                   Reset
@@ -1059,6 +1088,7 @@ export function KnowledgeGraphView({
             onPointerDown={handleCanvasPointerDown}
             onPointerMove={handleCanvasPointerMove}
             onPointerUp={handleCanvasPointerUp}
+            onPointerCancel={handleCanvasPointerUp}
             onWheel={handleWheel}
             preserveAspectRatio="xMidYMid meet"
             ref={svgRef}
@@ -1283,6 +1313,11 @@ export function KnowledgeGraphView({
           </svg>
 
           {/* Canvas Radar Minimap */}
+          <div aria-label="Graph zoom" className="graph-zoom-controls" role="group">
+            <button aria-label="Zoom out" onClick={() => zoomBy(1 / 1.25)} type="button">−</button>
+            <button aria-label="Reset graph view" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} type="button">Fit</button>
+            <button aria-label="Zoom in" onClick={() => zoomBy(1.25)} type="button">+</button>
+          </div>
           <div className="graph-minimap-panel">
             <div className="minimap-header-row">
               <span className="minimap-caption">Radar</span>

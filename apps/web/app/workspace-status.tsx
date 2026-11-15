@@ -72,6 +72,20 @@ export function WorkspaceStatus() {
 
   const [layoutMode, setLayoutMode] = useState<"force" | "concentric">("force");
   const [isToolbarOpen, setIsToolbarOpen] = useState(true);
+  const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia?.("(max-width: 900px)").matches) setIsToolbarOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isDocumentsOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsDocumentsOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isDocumentsOpen]);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -271,6 +285,7 @@ export function WorkspaceStatus() {
         workspaceId: wsId,
       });
       setDocuments((prev) => [doc, ...(prev ?? [])]);
+      setIsDocumentsOpen(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       await triggerAnalysis(wsId);
     } catch (err: unknown) {
@@ -381,10 +396,10 @@ export function WorkspaceStatus() {
         <div className="topbar-left">
           <span className="app-wordmark">Nodesh</span>
           <span className="topbar-divider" />
-          <span className="topbar-meta" title={`Workspace ID: ${ws.id}`}>
+          <span className="topbar-meta workspace-id" title={`Workspace ID: ${ws.id}`}>
             Workspace {ws.id.slice(0, 8)}
           </span>
-          <span className="topbar-bullet">·</span>
+          <span className="topbar-bullet workspace-id">·</span>
           <span className="topbar-meta">
             {docCount} document{docCount === 1 ? "" : "s"}
           </span>
@@ -400,6 +415,15 @@ export function WorkspaceStatus() {
         </div>
 
         <div className="topbar-right">
+          <button
+            aria-controls="document-navigator"
+            aria-expanded={isDocumentsOpen}
+            className="btn-topbar-secondary mobile-documents-toggle"
+            onClick={() => setIsDocumentsOpen((open) => !open)}
+            type="button"
+          >
+            Documents <span className="count-pill">{docCount}</span>
+          </button>
           {/* Graph Layout Mode Switcher */}
           <div aria-label="Graph layout mode" className="topbar-mode-toggle" role="group">
             <button
@@ -422,6 +446,7 @@ export function WorkspaceStatus() {
 
           {/* Controls Toggle */}
           <button
+            aria-expanded={isToolbarOpen}
             className={`btn-topbar-secondary${isToolbarOpen ? " btn-topbar-secondary-active" : ""}`}
             onClick={() => setIsToolbarOpen((prev) => !prev)}
             title="Toggle secondary graph controls and filters"
@@ -442,15 +467,33 @@ export function WorkspaceStatus() {
         </div>
       </header>
 
+      {!isDocumentsOpen && (uploadError || analysisError) && (
+        <p className="mobile-workspace-error" role="alert">{uploadError || analysisError}</p>
+      )}
+
       {/* MAIN APPLICATION WORKSPACE */}
       <div className="app-body">
+        {isDocumentsOpen && (
+          <button
+            aria-label="Close documents"
+            className="mobile-documents-backdrop"
+            onClick={() => setIsDocumentsOpen(false)}
+            type="button"
+          />
+        )}
         {/* FOCUSED DOCUMENT NAVIGATOR (Left Column) */}
-        <nav aria-label="Document navigator" className="doc-navigator">
+        <nav aria-label="Document navigator" className={`doc-navigator${isDocumentsOpen ? " doc-navigator-open" : ""}`} id="document-navigator">
           <div className="navigator-header">
             <div className="navigator-title-row">
               <span className="navigator-title">Documents</span>
               <span className="count-pill">{docCount}</span>
             </div>
+            <button
+              aria-label="Close document navigator"
+              className="inspector-close mobile-documents-close"
+              onClick={() => setIsDocumentsOpen(false)}
+              type="button"
+            >×</button>
             {documents && documents.length >= 2 && (
               <button
                 className="btn-nav-compare"
@@ -510,13 +553,14 @@ export function WorkspaceStatus() {
                     <li
                       className={`doc-item${isFiltered ? " doc-item-filtered" : ""}`}
                       key={doc.id}
-                      onClick={() =>
+                      onClick={() => {
                         setActiveDocFilter((prev) =>
                           prev !== null && typeof prev === "object" && prev.id === doc.id
                             ? null
                             : { id: doc.id, name: doc.original_filename },
-                        )
-                      }
+                        );
+                        setIsDocumentsOpen(false);
+                      }}
                       role="button"
                       tabIndex={0}
                       title="Click to isolate concepts from this document"

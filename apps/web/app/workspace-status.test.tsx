@@ -118,6 +118,17 @@ describe("WorkspaceStatus Editorial Shell & Navigator", () => {
     expect(container.querySelector(".doc-empty-state")).not.toBeNull();
     expect(container.textContent).toContain("No documents added");
     expect(container.textContent).toContain("Drop PDF, DOCX, TXT, or MD files here");
+
+    const documentsToggle = container.querySelector(".mobile-documents-toggle") as HTMLButtonElement;
+    expect(documentsToggle.getAttribute("aria-expanded")).toBe("false");
+    await act(async () => documentsToggle.click());
+    expect(container.querySelector(".doc-navigator-open")).not.toBeNull();
+    expect(documentsToggle.getAttribute("aria-expanded")).toBe("true");
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    expect(container.querySelector(".doc-navigator-open")).toBeNull();
+    expect(container.querySelector(".mobile-documents-backdrop")).toBeNull();
   });
 
   it("renders focused document list and comparison option when documents exist", async () => {

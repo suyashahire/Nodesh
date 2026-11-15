@@ -212,4 +212,27 @@ describe("KnowledgeGraphView Editorial Workspace", () => {
     const dimmedNodes = container.querySelectorAll(".graph-node-dimmed");
     expect(dimmedNodes.length).toBeGreaterThan(0);
   });
+  it("offers touch zoom and converts screen dragging to graph coordinates", async () => {
+    const root = createRoot(container);
+    await act(async () => root.render(<KnowledgeGraphView graph={mockGraph} />));
+    const svg = container.querySelector(".graph-canvas") as SVGSVGElement;
+    const camera = svg.querySelector("g")!;
+    Object.defineProperty(svg, "getBoundingClientRect", {
+      value: () => ({ width: 320, height: 400, left: 0, top: 0 }),
+    });
+    svg.setPointerCapture = vi.fn();
+    svg.releasePointerCapture = vi.fn();
+    await act(async () => {
+      svg.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 10, clientY: 10 }));
+      svg.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 30, clientY: 20 }));
+      svg.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+    });
+    expect(camera.getAttribute("transform")).toBe("translate(60, 30) scale(1)");
+    await act(async () => (container.querySelector('[aria-label="Zoom in"]') as HTMLButtonElement).click());
+    expect(camera.getAttribute("transform")).toContain("scale(1.25)");
+    await act(async () => (container.querySelector('[aria-label="Reset graph view"]') as HTMLButtonElement).click());
+    expect(camera.getAttribute("transform")).toBe("translate(0, 0) scale(1)");
+    await act(async () => root.unmount());
+  });
+
 });
