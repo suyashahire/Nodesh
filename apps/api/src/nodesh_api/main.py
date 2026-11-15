@@ -111,6 +111,7 @@ async def security_and_rate_limit_middleware(request: Request, call_next):
 
 
 @app.get("/health", tags=["system"])
+@app.get("/healthz", tags=["system"])
 def health_check() -> dict[str, str]:
     """Return process health without requiring external dependencies."""
     return {"status": "ok", "service": "nodesh-api"}
