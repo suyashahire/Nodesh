@@ -59,6 +59,11 @@ function relativeTime(isoString: string): string {
   return `${diffDays}d ago`;
 }
 
+function getFileFormat(filename: string): string {
+  const parts = filename.split(".");
+  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "txt";
+}
+
 export function WorkspaceStatus() {
   const [state, setState] = useState<WorkspaceState>({ kind: "loading" });
   const [documents, setDocuments] = useState<StoredDocument[] | null>(null);
@@ -566,7 +571,12 @@ export function WorkspaceStatus() {
                       title="Click to isolate concepts from this document"
                     >
                       <div className="doc-item-body">
-                        <span className="doc-item-name">{doc.original_filename}</span>
+                        <div className="doc-item-title-row">
+                          <span className={`doc-format-tag doc-format-${getFileFormat(doc.original_filename)}`}>
+                            {getFileFormat(doc.original_filename).toUpperCase()}
+                          </span>
+                          <span className="doc-item-name">{doc.original_filename}</span>
+                        </div>
                         <div className="doc-item-meta">
                           <span>{humanSize(doc.size_bytes)}</span>
                           <span className="meta-bullet">·</span>

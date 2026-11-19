@@ -91,8 +91,9 @@ export function formatPredicate(predicate?: string): string {
       return "trained for";
     case "affiliated_with":
       return "affiliated with";
+    case "integrates_with":
     case "integrated_with":
-      return "integrated with";
+      return "integrates with";
     case "part_of":
       return "part of";
     case "co_occurs_with":
@@ -119,6 +120,7 @@ export function getPredicateClass(predicate?: string): string {
     "applied_to",
     "trained_for",
     "affiliated_with",
+    "integrates_with",
     "integrated_with",
     "part_of",
     "co_occurs_with",

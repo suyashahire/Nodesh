@@ -62,6 +62,16 @@ STOP_WORDS = {
     "measure", "measures", "measured", "measuring",
     "compare", "compares", "compared", "comparing",
     "analyze", "analyzes", "analyzed", "analyzing",
+    "uses", "run", "runs", "running",
+    "apply", "applies", "applied", "applying",
+    "depend", "depends", "depended", "depending",
+    "relate", "relates", "related", "relating",
+    "belong", "belongs", "belonged", "belonging",
+    "associate", "associates", "associated", "associating",
+    "part", "parts", "type", "types", "kind", "kinds",
+    # Tabular and CSV boilerplate tokens
+    "field", "fields", "column", "columns", "row", "rows", "record", "records",
+    "header", "headers", "attribute", "attributes", "entry", "entries", "item", "items",
     # Academic & publication metadata
     "issn", "isbn", "doi", "volume", "issue", "vol", "no", "pp", "page", "pages",
     "journal", "published", "conference", "proceedings", "publisher", "editor",

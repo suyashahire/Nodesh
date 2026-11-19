@@ -432,6 +432,49 @@ button, input, select, textarea {
   flex: 1;
 }
 
+.doc-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.doc-format-tag {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.06rem 0.28rem;
+  border-radius: var(--radius-xs, 3px);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.doc-format-csv {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.doc-format-pdf {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.doc-format-docx {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.doc-format-txt,
+.doc-format-md {
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
 .doc-item-name {
   font-size: 0.8rem;
   font-weight: 600;
@@ -1497,7 +1540,8 @@ button, input, select, textarea {
   border: 1px solid #cae6e4;
 }
 
-.predicate-integrated_with {
+.predicate-integrated_with,
+.predicate-integrates_with {
   background-color: #eef3f7;
   color: #2a5270;
   border: 1px solid #c7dae7;

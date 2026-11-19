@@ -172,13 +172,18 @@ def merge_concepts(
             session.delete(rel)
             continue
 
-        c1, c2 = sorted([target_concept_id, partner_id], key=str)
+        if rel.source_concept_id == source_concept_id:
+            new_src = target_concept_id
+            new_tgt = rel.target_concept_id
+        else:
+            new_src = rel.source_concept_id
+            new_tgt = target_concept_id
 
         existing_rel = session.scalar(
             select(ConceptRelationship).where(
                 ConceptRelationship.workspace_id == workspace_id,
-                ConceptRelationship.source_concept_id == c1,
-                ConceptRelationship.target_concept_id == c2,
+                ConceptRelationship.source_concept_id == new_src,
+                ConceptRelationship.target_concept_id == new_tgt,
                 ConceptRelationship.relationship_type == rel.relationship_type,
             )
         )
@@ -222,8 +227,8 @@ def merge_concepts(
             existing_rel.document_count = distinct_docs
             session.delete(rel)
         else:
-            rel.source_concept_id = c1
-            rel.target_concept_id = c2
+            rel.source_concept_id = new_src
+            rel.target_concept_id = new_tgt
 
     session.flush()
 
