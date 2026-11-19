@@ -59,7 +59,12 @@ describe("extractRelationships", () => {
 describe("Predicate formatters", () => {
   it("formats predicates into natural human readable strings", () => {
     expect(formatPredicate("built_with")).toBe("built with");
+    expect(formatPredicate("powers")).toBe("powers");
     expect(formatPredicate("uses")).toBe("uses");
+    expect(formatPredicate("produces")).toBe("produces");
+    expect(formatPredicate("runs_on")).toBe("runs on");
+    expect(formatPredicate("depends_on")).toBe("depends on");
+    expect(formatPredicate("consists_of")).toBe("consists of");
     expect(formatPredicate("applied_to")).toBe("applied to");
     expect(formatPredicate("co_occurs_with")).toBe("related to");
     expect(formatPredicate(undefined)).toBe("related to");
@@ -67,7 +72,9 @@ describe("Predicate formatters", () => {
 
   it("maps predicates to corresponding CSS class names", () => {
     expect(getPredicateClass("built_with")).toBe("predicate-built_with");
+    expect(getPredicateClass("powers")).toBe("predicate-powers");
     expect(getPredicateClass("uses")).toBe("predicate-uses");
+    expect(getPredicateClass("produces")).toBe("predicate-produces");
     expect(getPredicateClass("unknown")).toBe("predicate-co_occurs_with");
     expect(getPredicateClass(undefined)).toBe("predicate-co_occurs_with");
   });

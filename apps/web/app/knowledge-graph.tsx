@@ -589,6 +589,7 @@ export function KnowledgeGraphView({
       npmi?: number;
       edgeId: string;
       predicate: string;
+      direction: "outgoing" | "incoming" | "undirected";
     }[] = [];
 
     for (const edge of visibleEdges) {
@@ -604,6 +605,7 @@ export function KnowledgeGraphView({
             npmi: edge.npmi,
             edgeId: edge.id,
             predicate: edge.relationship_type,
+            direction: edge.relationship_type === "co_occurs_with" ? "undirected" : "outgoing",
           });
         }
       } else if (edge.target === activeFocusId) {
@@ -618,6 +620,7 @@ export function KnowledgeGraphView({
             npmi: edge.npmi,
             edgeId: edge.id,
             predicate: edge.relationship_type,
+            direction: edge.relationship_type === "co_occurs_with" ? "undirected" : "incoming",
           });
         }
       }
@@ -1178,6 +1181,52 @@ export function KnowledgeGraphView({
             role="img"
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           >
+            <defs>
+              <marker
+                id="graph-arrow"
+                markerHeight="6"
+                markerUnits="strokeWidth"
+                markerWidth="6"
+                orient="auto"
+                refX="5"
+                refY="3"
+              >
+                <polygon fill="#a8a29e" points="0 1, 6 3, 0 5" />
+              </marker>
+              <marker
+                id="graph-arrow-highlighted"
+                markerHeight="7"
+                markerUnits="strokeWidth"
+                markerWidth="7"
+                orient="auto"
+                refX="5"
+                refY="3.5"
+              >
+                <polygon fill="#b45309" points="0 1, 7 3.5, 0 6" />
+              </marker>
+              <marker
+                id="graph-arrow-path"
+                markerHeight="7"
+                markerUnits="strokeWidth"
+                markerWidth="7"
+                orient="auto"
+                refX="5"
+                refY="3.5"
+              >
+                <polygon fill="#b45309" points="0 1, 7 3.5, 0 6" />
+              </marker>
+              <marker
+                id="graph-arrow-dimmed"
+                markerHeight="5"
+                markerUnits="strokeWidth"
+                markerWidth="5"
+                orient="auto"
+                refX="4"
+                refY="2.5"
+              >
+                <polygon fill="#d6d3d1" opacity="0.4" points="0 1, 5 2.5, 0 4" />
+              </marker>
+            </defs>
             <rect fill="#f2efe9" height={HEIGHT} width={WIDTH} />
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
               {/* Edges layer */}
@@ -1211,30 +1260,95 @@ export function KnowledgeGraphView({
                       (isBridgeModeActive && activeFocusId === null && selectedEdgeId === null && !isIncidentToBridge) ||
                       (documentFilterMatches !== null && activeFocusId === null && selectedEdgeId === null && isDocFiltered);
 
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const ux = dx / dist;
+                const uy = dy / dist;
+
+                const targetCentrality = betweennessScores.get(target.id) ?? 0;
+                const targetRadius = Math.round(
+                  13 + Math.min(13, Math.sqrt(target.total_occurrences) * 1.8 + targetCentrality * 1.2),
+                );
+                const sourceCentrality = betweennessScores.get(source.id) ?? 0;
+                const sourceRadius = Math.round(
+                  13 + Math.min(13, Math.sqrt(source.total_occurrences) * 1.8 + sourceCentrality * 1.2),
+                );
+
+                const isDirected = edge.relationship_type && edge.relationship_type !== "co_occurs_with";
+                const endOffset = isDirected ? targetRadius + 6 : targetRadius;
+                const startOffset = sourceRadius;
+
+                const x1 = source.x + ux * startOffset;
+                const y1 = source.y + uy * startOffset;
+                const x2 = dist > endOffset + startOffset ? target.x - ux * endOffset : target.x;
+                const y2 = dist > endOffset + startOffset ? target.y - uy * endOffset : target.y;
+
+                const markerUrl = !isDirected
+                  ? undefined
+                  : isPathEdge
+                  ? "url(#graph-arrow-path)"
+                  : isHighlighted
+                  ? "url(#graph-arrow-highlighted)"
+                  : isDimmed
+                  ? "url(#graph-arrow-dimmed)"
+                  : "url(#graph-arrow)";
+
+                const showBadge = (isSelectedEdge || (isHighlighted && isDirected)) && dist > 70;
+                const midX = (source.x + target.x) / 2;
+                const midY = (source.y + target.y) / 2;
+                const badgeText = formatPredicate(edge.relationship_type);
+                const badgeWidth = Math.max(48, badgeText.length * 6.5 + 16);
+
                 return (
-                  <line
-                    className={`graph-edge${isPathEdge ? " graph-edge-path" : isHighlighted ? " graph-edge-highlighted" : ""}${
-                      isDimmed ? " graph-edge-dimmed" : ""
-                    }`}
-                    key={edge.id}
-                    onClick={(e) => handleEdgeClick(e, edge)}
-                    strokeDasharray={isPathEdge ? "4 3" : undefined}
-                    strokeWidth={
-                      isPathEdge
-                        ? 2.6
-                        : isHighlighted
-                        ? 2.0
-                        : Math.max(1, 1 + Math.min(edge.strength, 6) / 5)
-                    }
-                    x1={source.x}
-                    x2={target.x}
-                    y1={source.y}
-                    y2={target.y}
-                  >
-                    <title>
-                      {source.label} —[{formatPredicate(edge.relationship_type)}]→ {target.label} (Strength: {edge.strength}{edge.pmi ? `, PMI: ${edge.pmi}` : ""})
-                    </title>
-                  </line>
+                  <React.Fragment key={edge.id}>
+                    <line
+                      className={`graph-edge${isPathEdge ? " graph-edge-path" : isHighlighted ? " graph-edge-highlighted" : ""}${
+                        isDimmed ? " graph-edge-dimmed" : ""
+                      }`}
+                      markerEnd={markerUrl}
+                      onClick={(e) => handleEdgeClick(e, edge)}
+                      strokeDasharray={isPathEdge ? "4 3" : undefined}
+                      strokeWidth={
+                        isPathEdge
+                          ? 2.6
+                          : isHighlighted
+                          ? 2.0
+                          : Math.max(1, 1 + Math.min(edge.strength, 6) / 5)
+                      }
+                      x1={x1}
+                      x2={x2}
+                      y1={y1}
+                      y2={y2}
+                    >
+                      <title>
+                        {source.label} —[{formatPredicate(edge.relationship_type)}]→ {target.label} (Strength: {edge.strength}{edge.pmi ? `, PMI: ${edge.pmi}` : ""})
+                      </title>
+                    </line>
+                    {showBadge && (
+                      <g
+                        className="graph-edge-badge-group"
+                        pointerEvents="none"
+                        transform={`translate(${midX}, ${midY})`}
+                      >
+                        <rect
+                          className={`graph-edge-badge-bg${isHighlighted ? " is-highlighted" : ""}`}
+                          height="18"
+                          rx="9"
+                          width={badgeWidth}
+                          x={-badgeWidth / 2}
+                          y="-9"
+                        />
+                        <text
+                          className="graph-edge-badge-text"
+                          textAnchor="middle"
+                          y="3.5"
+                        >
+                          {badgeText}
+                        </text>
+                      </g>
+                    )}
+                  </React.Fragment>
                 );
               })}
 
@@ -1565,15 +1679,29 @@ export function KnowledgeGraphView({
               </div>
 
               <div className="inspector-title-area">
-                <h3 className="inspector-title">
-                  {nodeById.get(selectedEdge.source)?.label}
-                </h3>
-                <span className={`predicate-pill ${getPredicateClass(selectedEdge.relationship_type)}`}>
-                  {formatPredicate(selectedEdge.relationship_type)}
-                </span>
-                <h3 className="inspector-title">
-                  {nodeById.get(selectedEdge.target)?.label}
-                </h3>
+                <div className="spo-card">
+                  <div className="spo-entity-box spo-subject">
+                    <span className="spo-role-tag">Subject</span>
+                    <h3 className="spo-entity-name">
+                      {nodeById.get(selectedEdge.source)?.label}
+                    </h3>
+                  </div>
+
+                  <div className="spo-relation-bridge">
+                    <div className="spo-arrow-line" />
+                    <span className={`predicate-pill ${getPredicateClass(selectedEdge.relationship_type)} spo-pill`}>
+                      {formatPredicate(selectedEdge.relationship_type)}
+                    </span>
+                    <span className="spo-arrow-head">▶</span>
+                  </div>
+
+                  <div className="spo-entity-box spo-object">
+                    <span className="spo-role-tag">Object</span>
+                    <h3 className="spo-entity-name">
+                      {nodeById.get(selectedEdge.target)?.label}
+                    </h3>
+                  </div>
+                </div>
               </div>
 
               <div className="inspector-section">
@@ -1685,7 +1813,15 @@ export function KnowledgeGraphView({
                         }`}
                         type="button"
                       >
-                        <span className="neighbor-chip-label">{neighbor.label}</span>
+                        <span className="neighbor-chip-label">
+                          {neighbor.direction === "outgoing" && (
+                            <span className="neighbor-chip-dir" title="Subject pointing to Object">→</span>
+                          )}
+                          {neighbor.direction === "incoming" && (
+                            <span className="neighbor-chip-dir" title="Object pointed from Subject">←</span>
+                          )}
+                          {neighbor.label}
+                        </span>
                         <small className="neighbor-chip-meta">
                           {neighbor.predicate && neighbor.predicate !== "co_occurs_with" ? `${formatPredicate(neighbor.predicate)} · ` : ""}
                           {neighbor.strength}

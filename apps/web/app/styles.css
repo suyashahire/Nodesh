@@ -924,6 +924,30 @@ button, input, select, textarea {
   stroke: #e4dfd6 !important;
 }
 
+/* Inline Edge Predicate Badges on Canvas */
+.graph-edge-badge-bg {
+  fill: #faf8f5;
+  stroke: #dcd7ce;
+  stroke-width: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.05));
+  transition: all 0.15s ease;
+}
+
+.graph-edge-badge-bg.is-highlighted {
+  fill: #fffbeb;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.graph-edge-badge-text {
+  font-family: var(--font-sans);
+  font-size: 8.5px;
+  font-weight: 600;
+  fill: #57534e;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
 /* Nodes */
 .graph-node {
   cursor: pointer;
@@ -1288,6 +1312,95 @@ button, input, select, textarea {
   margin: 0;
 }
 
+/* SPO Triple Inspector Card */
+.spo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  background-color: var(--surface-card, #fbf9f5);
+  border: 1px solid var(--shell-border-subtle, #e5e0d8);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.75rem 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.spo-entity-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm, 6px);
+  transition: background-color 0.15s;
+}
+
+.spo-subject {
+  background-color: #f1f5f9;
+  border-left: 3px solid #3b82f6;
+}
+
+.spo-object {
+  background-color: #f0fdf4;
+  border-left: 3px solid #10b981;
+}
+
+.spo-role-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-secondary, #64748b);
+}
+
+.spo-subject .spo-role-tag {
+  color: #2563eb;
+}
+
+.spo-object .spo-role-tag {
+  color: #059669;
+}
+
+.spo-entity-name {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-primary, #1e293b);
+  word-break: break-word;
+}
+
+.spo-relation-bridge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  position: relative;
+  padding: 0.15rem 0;
+}
+
+.spo-arrow-line {
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(to right, #93c5fd, #86efac);
+}
+
+.spo-pill {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.spo-arrow-head {
+  font-size: 0.6rem;
+  color: #059669;
+  margin-left: -2px;
+}
+
+.neighbor-chip-dir {
+  display: inline-block;
+  font-weight: 700;
+  margin-right: 0.25rem;
+}
+
 /* Predicate Badge Styles */
 .predicate-pill {
   display: inline-block;
@@ -1306,10 +1419,64 @@ button, input, select, textarea {
   border: 1px solid #c6d4ee;
 }
 
+.predicate-powers {
+  background-color: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
 .predicate-uses {
   background-color: #eff6f1;
   color: #2c6e49;
   border: 1px solid #cde5d5;
+}
+
+.predicate-produces {
+  background-color: #fefce8;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.predicate-analyzes {
+  background-color: #f0fdfa;
+  color: #115e59;
+  border: 1px solid #99f6e4;
+}
+
+.predicate-improves {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.predicate-runs_on {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.predicate-depends_on {
+  background-color: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.predicate-causes {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.predicate-consists_of {
+  background-color: #f5f3ff;
+  color: #5b21b6;
+  border: 1px solid #ddd6fe;
+}
+
+.predicate-compared_to {
+  background-color: #ecfeff;
+  color: #155e75;
+  border: 1px solid #a5f3fc;
 }
 
 .predicate-applied_to {

@@ -65,8 +65,26 @@ export function formatPredicate(predicate?: string): string {
   switch (predicate) {
     case "built_with":
       return "built with";
+    case "powers":
+      return "powers";
     case "uses":
       return "uses";
+    case "produces":
+      return "produces";
+    case "analyzes":
+      return "analyzes";
+    case "improves":
+      return "improves";
+    case "runs_on":
+      return "runs on";
+    case "depends_on":
+      return "depends on";
+    case "causes":
+      return "causes";
+    case "consists_of":
+      return "consists of";
+    case "compared_to":
+      return "compared to";
     case "applied_to":
       return "applied to";
     case "trained_for":
@@ -88,7 +106,16 @@ export function getPredicateClass(predicate?: string): string {
   if (!predicate) return "predicate-co_occurs_with";
   const valid = [
     "built_with",
+    "powers",
     "uses",
+    "produces",
+    "analyzes",
+    "improves",
+    "runs_on",
+    "depends_on",
+    "causes",
+    "consists_of",
+    "compared_to",
     "applied_to",
     "trained_for",
     "affiliated_with",

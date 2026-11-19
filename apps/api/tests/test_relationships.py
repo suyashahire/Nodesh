@@ -160,4 +160,41 @@ def test_relationship_predicates_are_typed(client: TestClient) -> None:
     assert any(r["relationship_type"] == "affiliated_with" for r in relationships)
 
 
+def test_subject_predicate_object_directionality(client: TestClient) -> None:
+    workspace_id = create_workspace(client)
+    doc_text = (
+        "FastAPI utilizes Pydantic for data validation. "
+        "FastAPI utilizes Pydantic for data validation.\n\n"
+        "Knowledge graphs are powered by PageRank. "
+        "Knowledge graphs are powered by PageRank."
+    )
+    upload_and_extract_concepts(client, workspace_id, "spo.txt", doc_text)
+    assert client.post(f"/api/v1/workspaces/{workspace_id}/concepts/extract").status_code == 200
+
+    response = client.post(f"/api/v1/workspaces/{workspace_id}/relationships/extract")
+    assert response.status_code == 200
+    relationships = response.json()["relationships"]
+
+    # Active voice: FastAPI utilizes Pydantic -> source=fastapi, target=pydantic, rel=uses
+    fastapi_pydantic = next(
+        (
+            r
+            for r in relationships
+            if r["source_name"] == "fastapi" and r["target_name"] == "pydantic"
+        ),
+        None,
+    )
+    assert fastapi_pydantic is not None
+    assert fastapi_pydantic["relationship_type"] == "uses"
+
+    # Passive voice: Knowledge graphs are powered by PageRank -> source=pagerank, target=knowledge graph, rel=powers
+    powers_rel = next(
+        (r for r in relationships if r["relationship_type"] == "powers"), None
+    )
+    assert powers_rel is not None
+    assert powers_rel["source_name"] == "pagerank"
+    assert powers_rel["target_name"] == "knowledge graph"
+
+
+
 
