@@ -1,0 +1,21 @@
+name: Keep Backend Alive
+
+on:
+  schedule:
+    # Ping every 14 minutes to prevent Render free instance spin-down (hibernates at 15 mins)
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Health Endpoint
+        run: |
+          TARGET_URL="${{ secrets.BACKEND_URL }}"
+          if [ -n "$TARGET_URL" ]; then
+            echo "Pinging $TARGET_URL/healthz..."
+            curl -s -f "$TARGET_URL/healthz" || echo "Backend ping returned non-200"
+          else
+            echo "BACKEND_URL secret is not set yet in GitHub repository secrets. Add it under Settings -> Secrets and variables -> Actions to keep your Render instance awake."
+          fi

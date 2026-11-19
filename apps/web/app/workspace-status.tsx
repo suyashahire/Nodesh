@@ -31,6 +31,7 @@ import {
   deleteWorkspace,
   getWorkspaceStats,
   resumeOrCreateWorkspace,
+  WORKSPACE_STORAGE_KEY,
   type Workspace,
   type WorkspaceStats,
 } from "../lib/workspace";
@@ -100,6 +101,44 @@ export function WorkspaceStatus() {
   const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
+  const [isColdStarting, setIsColdStarting] = useState(false);
+
+  // Cold start timer for free tier instances
+  useEffect(() => {
+    if (state.kind !== "loading") {
+      setIsColdStarting(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setIsColdStarting(true);
+    }, 3200);
+    return () => clearTimeout(timer);
+  }, [state.kind]);
+
+  // Client-side cache hydration (stale-while-revalidate for instant load)
+  useEffect(() => {
+    try {
+      const storedId = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
+      if (storedId) {
+        const cachedGraphStr = window.localStorage.getItem(`nodesh.cache.graph.${storedId}`);
+        const cachedDocsStr = window.localStorage.getItem(`nodesh.cache.docs.${storedId}`);
+        if (cachedGraphStr) {
+          const parsed = JSON.parse(cachedGraphStr);
+          if (parsed && Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+            setGraph(parsed);
+          }
+        }
+        if (cachedDocsStr) {
+          const parsedDocs = JSON.parse(cachedDocsStr);
+          if (Array.isArray(parsedDocs)) {
+            setDocuments(parsedDocs);
+          }
+        }
+      }
+    } catch {
+      // Ignore cache read errors
+    }
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -179,6 +218,17 @@ export function WorkspaceStatus() {
         setGraph(grph);
         if (st) setStats(st);
         if (comp) setComparison(comp);
+
+        try {
+          if (grph && Array.isArray(grph.nodes) && grph.nodes.length > 0) {
+            window.localStorage.setItem(`nodesh.cache.graph.${wsId}`, JSON.stringify(grph));
+          }
+          if (docs && Array.isArray(docs) && docs.length > 0) {
+            window.localStorage.setItem(`nodesh.cache.docs.${wsId}`, JSON.stringify(docs));
+          }
+        } catch {
+          // Ignore quota errors
+        }
       })
       .catch(() => {
         if (active) setAnalysisError("Could not load workspace data.");
@@ -363,7 +413,19 @@ export function WorkspaceStatus() {
           <div className="skeleton-sidebar skeleton" />
           <div className="skeleton-main skeleton" />
         </div>
-        <p className="status">Preparing your private workspace…</p>
+        {isColdStarting ? (
+          <div className="cold-start-banner">
+            <div className="cold-start-header">
+              <span className="cold-start-pulse-dot" />
+              <p className="status status-cold-start">Waking up backend service…</p>
+            </div>
+            <p className="cold-start-subtext">
+              Free cloud instances hibernate after 15 minutes of inactivity. Initial boot takes about 45 seconds — your workspace will load automatically.
+            </p>
+          </div>
+        ) : (
+          <p className="status">Preparing your private workspace…</p>
+        )}
       </div>
     );
   }
