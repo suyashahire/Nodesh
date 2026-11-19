@@ -26,7 +26,7 @@ Nodesh uses classical NLP and graph algorithms. It does not call an LLM, generat
 
 | Feature | What you can do |
 | --- | --- |
-| **Multiple documents** | Add PDF, DOCX, TXT, and Markdown files to the same anonymous workspace. |
+| **Multiple documents** | Add PDF, DOCX, TXT, Markdown, and CSV files to the same anonymous workspace. |
 | **Interactive graph** | Switch between organic and concentric layouts; pan, zoom, and drag concepts. |
 | **Concept inspector** | Read extractive summaries, occurrence counts, source filenames, and connected concepts. |
 | **Relationship evidence** | Select a connection to inspect supporting text and association metrics. |
@@ -162,7 +162,7 @@ npm run build:web
 
 - No account is required. A random workspace ID in browser local storage enables return visits; anyone with that ID can access its workspace.
 - Closing the tab or clearing browser storage does **not** delete server data. Use **Delete workspace** to remove its records and source files.
-- Current formats are PDF, DOCX, TXT, and Markdown. CSV and pasted-text ingestion are not implemented.
+- Current formats are PDF, DOCX, TXT, Markdown, and CSV. Pasted-text ingestion is not implemented.
 - Scanned PDFs require OCR, which is not currently supported. DOCX extraction reads paragraphs; table content is not included.
 - Default extraction limits are the first **50 PDF pages** and **300,000 characters** per document. Longer content is truncated.
 - Uploads are limited to **10 MiB per file** and **25 files per workspace**.

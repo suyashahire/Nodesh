@@ -1,5 +1,7 @@
 """Text extraction for supported source document formats with strict security safeguards."""
 
+import csv
+import io
 from pathlib import Path
 import zipfile
 
@@ -11,6 +13,63 @@ from nodesh_api.config import get_settings
 
 class TextExtractionError(ValueError):
     """Raised when a stored document cannot be read as its declared format."""
+
+
+def _extract_csv_text(raw_text: str) -> str:
+    """Parse CSV text into semantically structured sentences for NLP concept extraction."""
+    if not raw_text.strip():
+        return ""
+
+    sample = raw_text[:2048]
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",\t;|")
+    except Exception:
+        dialect = csv.excel
+
+    try:
+        reader = csv.reader(io.StringIO(raw_text), dialect)
+        rows = [row for row in reader if any(cell.strip() for cell in row)]
+    except Exception:
+        reader = csv.reader(io.StringIO(raw_text))
+        rows = [row for row in reader if any(cell.strip() for cell in row)]
+
+    if not rows:
+        return ""
+
+    first_row = [c.strip() for c in rows[0]]
+    has_header = (
+        len(rows) > 1
+        and len(first_row) > 1
+        and all(len(c) > 0 for c in first_row)
+        and not any(c.replace(".", "", 1).replace("-", "", 1).isdigit() for c in first_row)
+    )
+
+    lines: list[str] = []
+    if has_header:
+        header = first_row
+        for row in rows[1:]:
+            parts: list[str] = []
+            for i, cell in enumerate(row):
+                val = cell.strip()
+                if not val:
+                    continue
+                col = header[i] if i < len(header) else f"Field_{i+1}"
+                if val.endswith((".", "!", "?")):
+                    parts.append(f"{col}: {val}")
+                else:
+                    parts.append(f"{col}: {val}.")
+            if parts:
+                lines.append(" ".join(parts))
+    else:
+        for row in rows:
+            clean_cells = [c.strip() for c in row if c.strip()]
+            if clean_cells:
+                row_str = ", ".join(clean_cells)
+                if not row_str.endswith((".", "!", "?")):
+                    row_str += "."
+                lines.append(row_str)
+
+    return "\n".join(lines) if lines else raw_text
 
 
 def extract_text(path: Path, media_type: str) -> str:
@@ -53,6 +112,14 @@ def extract_text(path: Path, media_type: str) -> str:
                 extracted = path.read_text(encoding="utf-8")
             except UnicodeDecodeError:
                 extracted = path.read_text(encoding="utf-8", errors="replace")
+
+        elif media_type in {"text/csv", "application/csv", "application/vnd.ms-excel"}:
+            try:
+                raw_text = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                raw_text = path.read_text(encoding="utf-8", errors="replace")
+
+            extracted = _extract_csv_text(raw_text)
 
         else:
             raise TextExtractionError("The document format is not supported")

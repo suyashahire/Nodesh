@@ -42,7 +42,30 @@ def test_rejects_unsupported_document_format(client: TestClient) -> None:
     )
 
     assert response.status_code == 415
-    assert response.json() == {"detail": "Supported formats are PDF, DOCX, TXT, and Markdown"}
+    assert response.json() == {"detail": "Supported formats are PDF, DOCX, TXT, Markdown, and CSV"}
+
+
+def test_uploads_and_extracts_csv_document(client: TestClient) -> None:
+    workspace_id = create_workspace(client)
+    csv_content = b"Concept,Domain,Description\nKnowledge Graph,AI,Connected network of semantic entities.\nFastAPI,Web,High performance modern Python API framework."
+
+    response = client.post(
+        f"/api/v1/workspaces/{workspace_id}/documents",
+        files={"file": ("concepts.csv", csv_content, "text/csv")},
+    )
+
+    assert response.status_code == 201
+    document = response.json()
+    assert document["original_filename"] == "concepts.csv"
+    assert document["media_type"] == "text/csv"
+    assert document["extraction_status"] == "completed"
+
+    detail = client.get(f"/api/v1/workspaces/{workspace_id}/documents/{document['id']}")
+    assert detail.status_code == 200
+    extracted_text = detail.json()["extracted_text"]
+    assert "Knowledge Graph" in extracted_text
+    assert "FastAPI" in extracted_text
+    assert "Connected network of semantic entities." in extracted_text
 
 
 def test_documents_are_isolated_to_their_workspace(client: TestClient) -> None:

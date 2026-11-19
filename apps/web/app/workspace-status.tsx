@@ -252,12 +252,12 @@ export function WorkspaceStatus() {
 
     // Strict Client-Side Pre-Flight Validation
     const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
-    const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
+    const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md", ".csv"];
     const lastDot = file.name.lastIndexOf(".");
     const ext = lastDot >= 0 ? file.name.slice(lastDot).toLowerCase() : "";
 
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      setUploadError(`Unsupported format '${ext || "unknown"}'. Allowed formats are PDF, DOCX, TXT, and Markdown.`);
+      setUploadError(`Unsupported format '${ext || "unknown"}'. Allowed formats are PDF, DOCX, TXT, MD, and CSV.`);
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -292,7 +292,7 @@ export function WorkspaceStatus() {
       const message =
         err instanceof Error
           ? err.message
-          : "Upload failed. Please ensure file is PDF, DOCX, TXT, or MD under 10MB.";
+          : "Upload failed. Please ensure file is PDF, DOCX, TXT, MD, or CSV under 10MB.";
       setUploadError(message);
     } finally {
       setIsUploading(false);
@@ -380,7 +380,7 @@ export function WorkspaceStatus() {
     <div className="app-shell">
       {/* Hidden Global File Input */}
       <input
-        accept=".pdf,.docx,.txt,.md,application/pdf,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept=".pdf,.docx,.txt,.md,.csv,application/pdf,text/plain,text/markdown,text/csv,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         id="document-upload"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -536,7 +536,7 @@ export function WorkspaceStatus() {
               </div>
               <p className="empty-state-title">No documents added</p>
               <p className="empty-state-desc">
-                Drop PDF, DOCX, TXT, or MD files here to begin mapping concepts.
+                Drop PDF, DOCX, TXT, MD, or CSV files here to begin mapping concepts.
               </p>
               <span className="empty-state-btn">Browse files</span>
             </div>

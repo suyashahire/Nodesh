@@ -117,7 +117,7 @@ describe("WorkspaceStatus Editorial Shell & Navigator", () => {
     // Document Navigator: calm guided empty state
     expect(container.querySelector(".doc-empty-state")).not.toBeNull();
     expect(container.textContent).toContain("No documents added");
-    expect(container.textContent).toContain("Drop PDF, DOCX, TXT, or MD files here");
+    expect(container.textContent).toContain("Drop PDF, DOCX, TXT, MD, or CSV files here");
 
     const documentsToggle = container.querySelector(".mobile-documents-toggle") as HTMLButtonElement;
     expect(documentsToggle.getAttribute("aria-expanded")).toBe("false");

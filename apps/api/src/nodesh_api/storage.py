@@ -18,6 +18,13 @@ SUPPORTED_DOCUMENT_TYPES = {
     },
     ".txt": {"text/plain", "application/octet-stream"},
     ".md": {"text/markdown", "text/plain", "application/octet-stream"},
+    ".csv": {
+        "text/csv",
+        "application/csv",
+        "text/plain",
+        "application/vnd.ms-excel",
+        "application/octet-stream",
+    },
 }
 
 
@@ -48,6 +55,15 @@ def delete_workspace_storage(uploads_directory: Path, workspace_id: UUID) -> Non
         shutil.rmtree(workspace_directory)
 
 
+CANONICAL_MEDIA_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".csv": "text/csv",
+}
+
+
 def validate_upload(file: UploadFile) -> tuple[str, str]:
     if not file.filename:
         raise DocumentUploadError("A filename is required")
@@ -55,17 +71,13 @@ def validate_upload(file: UploadFile) -> tuple[str, str]:
     suffix = Path(file.filename).suffix.lower()
     accepted_media_types = SUPPORTED_DOCUMENT_TYPES.get(suffix)
     if accepted_media_types is None:
-        raise DocumentUploadError("Supported formats are PDF, DOCX, TXT, and Markdown")
+        raise DocumentUploadError("Supported formats are PDF, DOCX, TXT, Markdown, and CSV")
 
     declared_media_type = file.content_type or "application/octet-stream"
     if declared_media_type not in accepted_media_types:
         raise DocumentUploadError("The declared media type does not match the file extension")
 
-    canonical_media_type = next(
-        media_type
-        for media_type in accepted_media_types
-        if media_type != "application/octet-stream"
-    )
+    canonical_media_type = CANONICAL_MEDIA_TYPES[suffix]
     return suffix, canonical_media_type
 
 
@@ -84,7 +96,7 @@ def _validate_file_signature(suffix: str, chunk: bytes) -> None:
         if not chunk.startswith(b"PK\x03\x04"):
             raise DocumentUploadError("Invalid DOCX document: missing PK zip signature header")
 
-    elif suffix in {".txt", ".md"}:
+    elif suffix in {".txt", ".md", ".csv"}:
         # Reject executable / binary payloads disguised as text
         if chunk.startswith(b"MZ") or chunk.startswith(b"\x7fELF"):
             raise DocumentUploadError("Invalid text document: executable binary signature detected")

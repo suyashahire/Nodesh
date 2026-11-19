@@ -66,6 +66,17 @@ def test_rejects_binary_null_bytes_in_text_upload(client: TestClient) -> None:
     assert "binary null bytes detected" in response.json()["detail"]
 
 
+def test_rejects_binary_null_bytes_in_csv_upload(client: TestClient) -> None:
+    workspace_id = create_workspace(client)
+    binary_payload = b"col1,col2\nval1,\x00\x01corrupted"
+    response = client.post(
+        f"/api/v1/workspaces/{workspace_id}/documents",
+        files={"file": ("malicious.csv", binary_payload, "text/csv")},
+    )
+    assert response.status_code == 415
+    assert "binary null bytes detected" in response.json()["detail"]
+
+
 def test_rejects_executable_signature_in_text_upload(client: TestClient) -> None:
     workspace_id = create_workspace(client)
     # Windows PE executable starting with MZ
